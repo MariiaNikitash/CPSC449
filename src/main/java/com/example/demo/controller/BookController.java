@@ -212,7 +212,7 @@ public class BookController {
 
         int safeSize = Math.min(size, 100); // Max 100 items
         int safePage = Math.max(0, page); // avoid negatives
-        int offset = safePage * safeSize;
+        int offset = safePage * safeSize; // How many books to skip over
 
         // STEP 1: START THE STREAM & FILTER
         // do this first to "shrink" the list to only relevant books
@@ -223,7 +223,7 @@ public class BookController {
                         (maxPrice == null || book.getPrice() <= maxPrice));
 
         // STEP 2: SORT
-        // Organize the filtered results before we cut them into pages
+        // Organize the filtered results before cutting them into pages
         Comparator<Book> comparator = switch (sortBy.toLowerCase()) {
             case "price" -> Comparator.comparing(Book::getPrice);
             case "author" -> Comparator.comparing(Book::getAuthor);
@@ -234,8 +234,7 @@ public class BookController {
             comparator = comparator.reversed();
         }
 
-        // STEP 3: PAGINATE (The final "slice")
-        // Use .skip() for the offset and .limit() for the page size
+        // STEP 3: PAGINATE
         return bookStream
                 .sorted(comparator) // sort after filtering
                 .skip(offset)       // pagination is the very last step
