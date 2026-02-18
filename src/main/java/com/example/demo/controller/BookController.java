@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RestController // this class handles API requests
 @RequestMapping("/api") // base path
@@ -194,14 +195,52 @@ public class BookController {
 
     // Advanced GET endpoint with filtering, sorting, and pagination combined in the valid order
     // filter -> sort -> pagination
-    @GetMapping("/books-filter-sort")
-    public List<Book> getFilteredBooks() {
+    @GetMapping("/books-advanced")
+    public List<Book> getFilteredBooks(
+        // // 1. filter params (required=false so they can be null)
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) String author,
+        @RequestParam(required = false) Double minPrice,
+        @RequestParam(required = false) Double maxPrice,
+        // 2. sort params
+        @RequestParam(defaultValue = "title") String sortBy,
+        @RequestParam(defaultValue = "asc") String order,
+        // 3. pagination params
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+        ) {
 
-        // filter
+        int safeSize = Math.min(size, 100); // Max 100 items
+        int safePage = Math.max(0, page); // avoid negatives
+        int offset = safePage * safeSize;
 
-        // sort
+        // STEP 1: START THE STREAM & FILTER
+        // do this first to "shrink" the list to only relevant books
+        Stream<Book> bookStream = books.stream()
+                .filter(book -> title == null || book.getTitle().toLowerCase().contains(title.toLowerCase()))
+                .filter(book -> author == null || book.getAuthor().toLowerCase().contains(author.toLowerCase()))
+                .filter(book -> (minPrice == null || book.getPrice() >= minPrice) &&
+                        (maxPrice == null || book.getPrice() <= maxPrice));
 
-        // pagination
+        // STEP 2: SORT
+        // Organize the filtered results before we cut them into pages
+        Comparator<Book> comparator = switch (sortBy.toLowerCase()) {
+            case "price" -> Comparator.comparing(Book::getPrice);
+            case "author" -> Comparator.comparing(Book::getAuthor);
+            default -> Comparator.comparing(Book::getTitle);
+        };
+
+        if ("desc".equalsIgnoreCase(order)) {
+            comparator = comparator.reversed();
+        }
+
+        // STEP 3: PAGINATE (The final "slice")
+        // Use .skip() for the offset and .limit() for the page size
+        return bookStream
+                .sorted(comparator) // sort after filtering
+                .skip(offset)       // pagination is the very last step
+                .limit(safeSize)
+                .collect(Collectors.toList());
 
     }
 
