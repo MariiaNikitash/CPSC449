@@ -111,13 +111,14 @@ public class BookController {
     // ---------------------------- HW -------------------------------
 
     // PUT endpoint (update book)
-    @PutMapping("/books/update/{id}")
+    @PutMapping("/books/{id}")
     public Book updateBook(@PathVariable Long id, @RequestBody Book updatedBook) {
         Book bookToUpdate = books.stream()
                 .filter(book -> book.getId().equals(id))
                 .findFirst()
                 .orElse(null);
         if (bookToUpdate == null) {
+            System.out.println("Book with id: " + id + " not found");
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found!");
         }
         // update
@@ -159,7 +160,7 @@ public class BookController {
     //  *   *   *   *   *   *   *   *   *   *   *   *   *   *   *
 
     // DELETE endpoint (remove book)
-    @DeleteMapping("/books/delete/{id}")
+    @DeleteMapping("/books/{id}")
     public Book deleteBook(@PathVariable Long id) {
     Book bookToDelete = books.stream()
             .filter(book -> book.getId().equals(id))
